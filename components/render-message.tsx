@@ -1,4 +1,4 @@
-import { JSONValue, Message } from 'ai'
+import { JSONValue, Message, ToolInvocation } from 'ai'
 import { useMemo } from 'react'
 import { AnswerSection } from './answer-section'
 import { ReasoningSection } from './reasoning-section'
