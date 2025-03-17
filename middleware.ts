@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+import { updateSession } from './supabase/middleware'
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Create a response
   const response = NextResponse.next()
 
@@ -22,5 +23,6 @@ export function middleware(request: NextRequest) {
   response.headers.set('x-protocol', protocol)
   response.headers.set('x-base-url', baseUrl)
 
-  return response
+  //call updateSession
+  return await updateSession(request)
 }

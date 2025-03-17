@@ -1,4 +1,4 @@
-import { getChat, saveChat } from '@/lib/actions/chat'
+import { getChat, saveChat, saveChatSupabase } from '@/lib/actions/chat'
 import { generateRelatedQuestions } from '@/lib/agents/generate-related-questions'
 import { ExtendedCoreMessage } from '@/lib/types'
 import { convertToExtendedCoreMessages } from '@/lib/utils'
@@ -63,6 +63,11 @@ export async function handleStreamFinish({
       ...allAnnotations, // Add annotations before the last message
       ...responseMessages.slice(-1)
     ] as ExtendedCoreMessage[]
+
+    await saveChatSupabase({
+      id: chatId,
+      messages: generatedMessages
+    })
 
     if (process.env.ENABLE_SAVE_CHAT_HISTORY !== 'true') {
       return
