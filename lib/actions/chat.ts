@@ -1,9 +1,13 @@
 'use server'
 
+import { getRedisClient, RedisWrapper } from '@/lib/redis/config'
+import { ExtendedCoreMessage, SupabaseChat, type Chat } from '@/lib/types'
+import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { type Chat } from '@/lib/types'
-import { getRedisClient, RedisWrapper } from '@/lib/redis/config'
+import { db } from '../drizzle/db'
+import { T_chat, T_message } from '../drizzle/schema'
+import { getUser } from './user'
 
 async function getRedis(): Promise<RedisWrapper> {
   return await getRedisClient()
@@ -157,4 +161,55 @@ export async function shareChat(id: string, userId: string = 'anonymous') {
   await redis.hmset(`chat:${id}`, payload)
 
   return payload
+}
+
+//--------------------------------
+// Using Supabase for storage
+//--------------------------------
+export async function saveChatSupabase(chat: SupabaseChat) {
+  try {
+    const user = await getUser({ throwIfError: true })
+
+    //if chat exists, make sure current user can access it
+    const existingChat = await db.query.T_chat.findFirst({
+      where: eq(T_chat.id, chat.id),
+      columns: {
+        userId: true
+      }
+    })
+
+    if (!existingChat) {
+      //create chat in DB
+      await db.insert(T_chat).values({
+        id: chat.id,
+        userId: user.id,
+        title: 'Test'
+      })
+    }
+
+    //save messages to DB
+    for (const message of chat.messages) {
+      await db.insert(T_message).values({
+        chatId: chat.id,
+        message: message
+      })
+    }
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function getChatSupabase(id: string) {
+  const chat = await db.query.T_chat.findFirst({
+    where: eq(T_chat.id, id),
+    with: { messages: true }
+  })
+
+  if (!chat) return null
+
+  // Extract just the message content from each message record
+  return {
+    ...chat,
+    messages: chat.messages.map(x => x.message) as ExtendedCoreMessage[]
+  }
 }

@@ -2,7 +2,8 @@
 
 import { CHAT_ID } from '@/lib/constants'
 import { Model } from '@/lib/types/models'
-import { Message, useChat } from 'ai/react'
+import { useChat } from '@ai-sdk/react'
+import { Message } from 'ai/react'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { ChatMessages } from './chat-messages'
@@ -37,7 +38,7 @@ export function Chat({
       id
     },
     onFinish: () => {
-      window.history.replaceState({}, '', `/search/${id}`)
+      window.history.replaceState({}, '', `/chat/${id}`)
     },
     onError: error => {
       toast.error(`Error in chat: ${error.message}`)
@@ -64,6 +65,7 @@ export function Chat({
 
   return (
     <div className="flex flex-col w-full max-w-3xl pt-14 pb-60 mx-auto stretch">
+      {messages.length}
       <ChatMessages
         messages={messages}
         data={data}
@@ -71,6 +73,7 @@ export function Chat({
         isLoading={isLoading}
         chatId={id}
       />
+
       <ChatPanel
         input={input}
         handleInputChange={handleInputChange}
