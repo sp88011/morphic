@@ -1,11 +1,11 @@
-import { JSONValue, Message } from 'ai'
+import { JSONValue, UIMessage } from 'ai'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { RenderMessage } from './render-message'
 import { ToolSection } from './tool-section'
 import { Spinner } from './ui/spinner'
 
 interface ChatMessagesProps {
-  messages: Message[]
+  messages: UIMessage[]
   data: JSONValue[] | undefined
   onQuerySelect: (query: string) => void
   isLoading: boolean

@@ -5,8 +5,8 @@ import {
   CoreToolMessage,
   generateId,
   JSONValue,
-  Message,
-  ToolInvocation
+  ToolInvocation,
+  UIMessage
 } from 'ai'
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -61,26 +61,30 @@ function addToolMessageToChat({
   messages
 }: {
   toolMessage: CoreToolMessage
-  messages: Array<Message>
-}): Array<Message> {
+  messages: Array<UIMessage>
+}): Array<UIMessage> {
   return messages.map(message => {
-    if (message.toolInvocations) {
+    if (message.parts) {
       return {
         ...message,
-        toolInvocations: message.toolInvocations.map(toolInvocation => {
-          const toolResult = toolMessage.content.find(
-            tool => tool.toolCallId === toolInvocation.toolCallId
-          )
+        parts: message.parts.map(part => {
+          if (part.type === 'tool-invocation') {
+            const toolResult = toolMessage.content.find(
+              tool => tool.toolCallId === part.toolInvocation.toolCallId
+            )
 
-          if (toolResult) {
-            return {
-              ...toolInvocation,
-              state: 'result',
-              result: toolResult.result
+            if (toolResult) {
+              return {
+                ...part,
+                toolInvocation: {
+                  ...part.toolInvocation,
+                  state: 'result',
+                  result: toolResult.result
+                }
+              }
             }
           }
-
-          return toolInvocation
+          return part
         })
       }
     }
@@ -91,12 +95,12 @@ function addToolMessageToChat({
 
 export function convertToUIMessages(
   messages: Array<ExtendedCoreMessage>
-): Array<Message> {
+): Array<UIMessage> {
   let pendingAnnotations: JSONValue[] = []
   let pendingReasoning: string | undefined = undefined
   let pendingReasoningTime: number | undefined = undefined
 
-  return messages.reduce((chatMessages: Array<Message>, message) => {
+  return messages.reduce((chatMessages: Array<UIMessage>, message) => {
     // Handle tool messages
     if (message.role === 'tool') {
       return addToolMessageToChat({
@@ -167,6 +171,15 @@ export function convertToUIMessages(
       }
     }
 
+    //turn tool invocations into 'ToolInvocationUIPart'
+    const toolInvocationsParts =
+      toolInvocations.length > 0
+        ? toolInvocations.map(tool => ({
+            type: 'tool-invocation' as const,
+            toolInvocation: tool
+          }))
+        : []
+
     // For assistant messages, assemble annotations from any stashed data.
     let annotations: JSONValue[] | undefined = undefined
     if (message.role === 'assistant') {
@@ -188,13 +201,27 @@ export function convertToUIMessages(
       }
     }
 
+    // Only create text part if there's actual content
+    const parts = [
+      ...(textContent
+        ? [
+            {
+              type: 'text' as const,
+              text: textContent
+            }
+          ]
+        : []),
+      ...toolInvocationsParts
+    ]
+
     // Create the new message. Note: we do not include a top-level "reasoning" property.
-    const newMessage: Message = {
+    const newMessage: UIMessage = {
       id: generateId(),
       role: message.role,
-      content: textContent,
-      toolInvocations: toolInvocations.length > 0 ? toolInvocations : undefined,
-      annotations: annotations
+      content: '', //used to be textContent but we store that in 'parts' now
+      //toolInvocations: toolInvocations.length > 0 ? toolInvocations : undefined,
+      annotations: annotations,
+      parts
     }
 
     chatMessages.push(newMessage)
@@ -211,7 +238,7 @@ export function convertToUIMessages(
 }
 
 export function convertToExtendedCoreMessages(
-  messages: Message[]
+  messages: UIMessage[]
 ): ExtendedCoreMessage[] {
   const result: ExtendedCoreMessage[] = []
 

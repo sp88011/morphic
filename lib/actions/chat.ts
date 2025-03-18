@@ -2,9 +2,12 @@
 
 import { getRedisClient, RedisWrapper } from '@/lib/redis/config'
 import { ExtendedCoreMessage, SupabaseChat, type Chat } from '@/lib/types'
-import { eq } from 'drizzle-orm'
+import { openai } from '@ai-sdk/openai'
+import { generateObject } from 'ai'
+import { and, asc, eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { z } from 'zod'
 import { db } from '../drizzle/db'
 import { T_chat, T_message } from '../drizzle/schema'
 import { getUser } from './user'
@@ -180,10 +183,29 @@ export async function saveChatSupabase(chat: SupabaseChat) {
 
     if (!existingChat) {
       //create chat in DB
+
+      let title = 'New chat'
+      try {
+        const { object } = await generateObject({
+          model: openai('gpt-4o-mini'),
+          schema: z.object({
+            title: z
+              .string()
+              .describe(
+                'A short title for the chat, no more than 100 characters'
+              )
+          }),
+          prompt: `Generate a precise title that summarizes the topic for a chat started with this message: ${JSON.stringify(
+            chat.messages[0]
+          )}`
+        })
+        title = object.title
+      } catch (e) {}
+
       await db.insert(T_chat).values({
         id: chat.id,
         userId: user.id,
-        title: 'Test'
+        title
       })
     }
 
@@ -202,7 +224,7 @@ export async function saveChatSupabase(chat: SupabaseChat) {
 export async function getChatSupabase(id: string) {
   const chat = await db.query.T_chat.findFirst({
     where: eq(T_chat.id, id),
-    with: { messages: true }
+    with: { messages: { orderBy: [asc(T_message.createdAt)] } }
   })
 
   if (!chat) return null
@@ -212,4 +234,14 @@ export async function getChatSupabase(id: string) {
     ...chat,
     messages: chat.messages.map(x => x.message) as ExtendedCoreMessage[]
   }
+}
+
+export async function deleteChat(id: string) {
+  const user = await getUser({ throwIfError: true })
+
+  await db
+    .delete(T_chat)
+    .where(and(eq(T_chat.id, id), eq(T_chat.userId, user.id)))
+
+  revalidatePath('/')
 }

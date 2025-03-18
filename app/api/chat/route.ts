@@ -18,6 +18,8 @@ const DEFAULT_MODEL: Model = {
 export async function POST(req: Request) {
   try {
     const { messages, id: chatId } = await req.json()
+
+    console.log('POST messages:', messages)
     const referer = req.headers.get('referer')
     const isSharePage = referer?.includes('/share/')
 
@@ -59,13 +61,13 @@ export async function POST(req: Request) {
 
     return supportsToolCalling
       ? createToolCallingStreamResponse({
-          messages,
+          userMessage: messages, //note that we're using `experimental_prepareRequestBody` to send only the last message
           model: selectedModel,
           chatId,
           searchMode
         })
       : createManualToolStreamResponse({
-          messages,
+          userMessage: messages,
           model: selectedModel,
           chatId,
           searchMode

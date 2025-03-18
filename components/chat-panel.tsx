@@ -2,7 +2,7 @@
 
 import { Model } from '@/lib/types/models'
 import { cn } from '@/lib/utils'
-import { Message } from 'ai'
+import { UIMessage } from 'ai'
 import { ArrowUp, MessageCirclePlus, Square } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
@@ -12,14 +12,15 @@ import { ModelSelector } from './model-selector'
 import { SearchModeToggle } from './search-mode-toggle'
 import { Button } from './ui/button'
 import { IconLogo } from './ui/icons'
+import { useSidebar } from './ui/sidebar'
 
 interface ChatPanelProps {
   input: string
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
   isLoading: boolean
-  messages: Message[]
-  setMessages: (messages: Message[]) => void
+  messages: UIMessage[]
+  setMessages: (messages: UIMessage[]) => void
   query?: string
   stop: () => void
   append: (message: any) => void
@@ -44,6 +45,7 @@ export function ChatPanel({
   const isFirstRender = useRef(true)
   const [isComposing, setIsComposing] = useState(false) // Composition state
   const [enterDisabled, setEnterDisabled] = useState(false) // Disable Enter after composition ends
+  const { state } = useSidebar()
 
   const handleCompositionStart = () => setIsComposing(true)
 
@@ -75,10 +77,11 @@ export function ChatPanel({
   return (
     <div
       className={cn(
-        'mx-auto w-full',
+        'w-full transition-[margin] duration-200 ease-linear fixed',
         messages.length > 0
-          ? 'fixed bottom-0 left-0 right-0 bg-background'
-          : 'fixed bottom-8 left-0 right-0 top-6 flex flex-col items-center justify-center'
+          ? 'bottom-0 left-0 right-0 bg-background'
+          : 'bottom-8 left-0 right-0 top-6 flex flex-col items-center justify-center',
+        state === 'expanded' ? 'ml-[calc(var(--sidebar-width)/2)]' : 'ml-0'
       )}
     >
       {messages.length === 0 && (

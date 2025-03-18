@@ -72,7 +72,7 @@ export interface SupabaseChat extends Record<string, any> {
   messages: ExtendedCoreMessage[] // Note: Changed from AIMessage to ExtendedCoreMessage
 }
 
-// ExtendedCoreMessage for saveing annotations
+// ExtendedCoreMessage for saving annotations
 export type ExtendedCoreMessage = Omit<CoreMessage, 'role' | 'content'> & {
   role: CoreMessage['role'] | 'data'
   content: CoreMessage['content'] | JSONValue

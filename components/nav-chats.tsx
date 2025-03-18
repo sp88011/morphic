@@ -1,6 +1,6 @@
 'use client'
 
-import { Folder, Forward, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
+import { Folder, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
 
 import {
   DropdownMenu,
@@ -18,6 +18,7 @@ import {
   SidebarMenuItem,
   useSidebar
 } from '@/components/ui/sidebar'
+import { deleteChat } from '@/lib/actions/chat'
 import { type T_chat } from '@/lib/drizzle/schema'
 import Link from 'next/link'
 import { Button } from './ui/button'
@@ -42,8 +43,10 @@ export function NavChats({ chats }: { chats: (typeof T_chat.$inferSelect)[] }) {
       <SidebarMenu>
         {chats.map(item => (
           <SidebarMenuItem key={item.id}>
-            <SidebarMenuButton asChild>
-              <Link href={`/chat/${item.id}`}>{item.title}</Link>
+            <SidebarMenuButton size="sm">
+              <Link href={`/chat/${item.id}`}>
+                <span className="line-clamp-1">{item.title}</span>
+              </Link>
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -53,33 +56,28 @@ export function NavChats({ chats }: { chats: (typeof T_chat.$inferSelect)[] }) {
                 </SidebarMenuAction>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-48 rounded-lg"
+                className="w-28 min-w-0 rounded-lg"
                 side={isMobile ? 'bottom' : 'right'}
                 align={isMobile ? 'end' : 'start'}
               >
-                <DropdownMenuItem>
-                  <Folder className="text-muted-foreground" />
+                <DropdownMenuItem className="gap-2">
+                  <Folder className="text-muted-foreground w-4 h-4" />
                   <span>Share</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Forward className="text-muted-foreground" />
-                  <span>Delete</span>
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Trash2 className="text-muted-foreground" />
-                  <span>Delete Project</span>
+                <DropdownMenuItem
+                  className="gap-2"
+                  onSelect={() => {
+                    deleteChat(item.id)
+                  }}
+                >
+                  <Trash2 className="text-muted-foreground w-4 h-4" />
+                  <span>Delete</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
         ))}
-        <SidebarMenuItem>
-          <SidebarMenuButton className="text-sidebar-foreground/70">
-            <MoreHorizontal className="text-sidebar-foreground/70" />
-            <span>More</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroup>
   )

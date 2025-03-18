@@ -19,7 +19,6 @@ export default async function Page({
 
   const messages = convertToUIMessages(chat?.messages ?? [])
 
-  console.log('server messages', messages)
   const models = await getModels()
 
   return <Chat id={id} models={models} savedMessages={messages} />

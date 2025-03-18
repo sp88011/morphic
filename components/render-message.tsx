@@ -1,4 +1,4 @@
-import { JSONValue, Message, ToolInvocation } from 'ai'
+import { JSONValue, ToolInvocation, UIMessage } from 'ai'
 import { useMemo } from 'react'
 import { AnswerSection } from './answer-section'
 import { ReasoningSection } from './reasoning-section'
@@ -7,7 +7,7 @@ import { ToolSection } from './tool-section'
 import { UserMessage } from './user-message'
 
 interface RenderMessageProps {
-  message: Message
+  message: UIMessage
   messageId: string
   getIsOpen: (id: string) => boolean
   onOpenChange: (id: string, open: boolean) => void
@@ -89,7 +89,11 @@ export function RenderMessage({
   }, [reasoningAnnotation])
 
   if (message.role === 'user') {
-    return <UserMessage message={message.content} />
+    return (
+      <UserMessage
+        message={message.parts?.find(p => p.type === 'text')?.text ?? ''}
+      />
+    )
   }
 
   // New way: Use parts instead of toolInvocations

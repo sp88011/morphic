@@ -1,9 +1,8 @@
 'use client'
 
-import { CHAT_ID } from '@/lib/constants'
 import { Model } from '@/lib/types/models'
 import { useChat } from '@ai-sdk/react'
-import { Message } from 'ai/react'
+import { UIMessage } from 'ai'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { ChatMessages } from './chat-messages'
@@ -16,7 +15,7 @@ export function Chat({
   models
 }: {
   id: string
-  savedMessages?: Message[]
+  savedMessages?: UIMessage[]
   query?: string
   models?: Model[]
 }) {
@@ -32,8 +31,9 @@ export function Chat({
     data,
     setData
   } = useChat({
+    api: '/api/chat',
+    id: id,
     initialMessages: savedMessages,
-    id: CHAT_ID,
     body: {
       id
     },
@@ -43,7 +43,15 @@ export function Chat({
     onError: error => {
       toast.error(`Error in chat: ${error.message}`)
     },
-    sendExtraMessageFields: false // Disable extra message fields
+    sendExtraMessageFields: false, // Disable extra message fields
+
+    experimental_prepareRequestBody({ messages, id }) {
+      // only send the last message to the server:
+      return {
+        messages: messages.length > 0 ? messages[messages.length - 1] : null,
+        id
+      }
+    }
   })
 
   useEffect(() => {
@@ -64,7 +72,7 @@ export function Chat({
   }
 
   return (
-    <div className="flex flex-col w-full max-w-3xl pt-14 pb-60 mx-auto stretch">
+    <div className="flex flex-1 flex-col mx-auto stretch max-w-3xl group/sidebar-wrapper">
       <ChatMessages
         messages={messages}
         data={data}

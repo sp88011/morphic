@@ -5,8 +5,12 @@ import {
   JSONValue,
   streamText
 } from 'ai'
+import { asc, eq } from 'drizzle-orm'
 import { manualResearcher } from '../agents/manual-researcher'
+import { db } from '../drizzle/db'
+import { T_message } from '../drizzle/schema'
 import { ExtendedCoreMessage } from '../types'
+import { convertToUIMessages } from '../utils'
 import { getMaxAllowedTokens, truncateMessages } from '../utils/context-window'
 import { handleStreamFinish } from './handle-stream-finish'
 import { executeToolCall } from './tool-execution'
@@ -15,13 +19,25 @@ import { BaseStreamConfig } from './types'
 export function createManualToolStreamResponse(config: BaseStreamConfig) {
   return createDataStreamResponse({
     execute: async (dataStream: DataStreamWriter) => {
-      const { messages, model, chatId, searchMode } = config
+      const { userMessage, model, chatId, searchMode } = config
       const modelId = `${model.providerId}:${model.id}`
       let toolCallModelId = model.toolCallModel
         ? `${model.providerId}:${model.toolCallModel}`
         : modelId
 
       try {
+        //load all previous messages in chat
+        const previousMessages = await db.query.T_message.findMany({
+          where: eq(T_message.chatId, chatId),
+          orderBy: [asc(T_message.createdAt)]
+        })
+
+        const converted = convertToUIMessages(
+          previousMessages.map(m => m.message)
+        )
+
+        const messages = [...converted, userMessage]
+
         const coreMessages = convertToCoreMessages(messages)
         const truncatedMessages = truncateMessages(
           coreMessages,
@@ -65,7 +81,7 @@ export function createManualToolStreamResponse(config: BaseStreamConfig) {
 
             await handleStreamFinish({
               responseMessages: result.response.messages,
-              originalMessages: messages,
+              userMessage,
               model: modelId,
               chatId,
               dataStream,

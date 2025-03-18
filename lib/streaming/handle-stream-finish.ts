@@ -1,12 +1,12 @@
 import { getChat, saveChat, saveChatSupabase } from '@/lib/actions/chat'
 import { generateRelatedQuestions } from '@/lib/agents/generate-related-questions'
 import { ExtendedCoreMessage } from '@/lib/types'
-import { convertToExtendedCoreMessages } from '@/lib/utils'
-import { CoreMessage, DataStreamWriter, JSONValue, Message } from 'ai'
+import { CoreMessage, DataStreamWriter, JSONValue, UIMessage } from 'ai'
 
 interface HandleStreamFinishParams {
+  userMessage: UIMessage
   responseMessages: CoreMessage[]
-  originalMessages: Message[]
+  //originalMessages: UIMessage[]
   model: string
   chatId: string
   dataStream: DataStreamWriter
@@ -15,8 +15,9 @@ interface HandleStreamFinishParams {
 }
 
 export async function handleStreamFinish({
+  userMessage,
   responseMessages,
-  originalMessages,
+  //originalMessages,
   model,
   chatId,
   dataStream,
@@ -24,7 +25,10 @@ export async function handleStreamFinish({
   annotations = []
 }: HandleStreamFinishParams) {
   try {
-    const extendedCoreMessages = convertToExtendedCoreMessages(originalMessages)
+    // console.log('YYYYY', originalMessages)
+    //const extendedCoreMessages = convertToExtendedCoreMessages(originalMessages)
+    // console.log('TTTTT', extendedCoreMessages)
+    // console.log('VVVVV', responseMessages)
     let allAnnotations = [...annotations]
 
     if (!skipRelatedQuestions) {
@@ -58,7 +62,8 @@ export async function handleStreamFinish({
 
     // Create the message to save
     const generatedMessages = [
-      ...extendedCoreMessages,
+      //...extendedCoreMessages,
+      userMessage,
       ...responseMessages.slice(0, -1),
       ...allAnnotations, // Add annotations before the last message
       ...responseMessages.slice(-1)
@@ -79,7 +84,7 @@ export async function handleStreamFinish({
       createdAt: new Date(),
       userId: 'anonymous',
       path: `/search/${chatId}`,
-      title: originalMessages[0].content,
+      title: 'New chat',
       id: chatId
     }
 
